@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1020">
+  <meta name="description" content="连接受信的 DSH API 桥接服务，从网页发送任务并查看会话。">
+  <title>DSH Remote Console</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="DSH Remote Console 首页">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none"><path d="M7 7.5h11.5a6.5 6.5 0 0 1 0 13H7v-13Z" stroke="currentColor" stroke-width="2.2"/><path d="M11 24.5h13M21.5 19l3 5.5-3 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-copy"><strong>DSH</strong><small>REMOTE CONSOLE</small></span>
+    </a>
+    <div class="topbar-right">
+      <span id="connection-pill" class="connection-pill is-offline"><i></i><span id="connection-label">尚未连接</span></span>
+      <a class="source-link" href="https://github.com/ccch1mneyyy/dsh-go" target="_blank" rel="noreferrer">基于 DSH Go <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="intro-row">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-line"></span> PRIVATE CONTROL SURFACE</p>
+        <h1>把任务交给<br class="mobile-break">另一台设备上的 <span>DSH</span></h1>
+        <p class="intro-copy">从浏览器连接受信桥接服务，创建会话、发送任务，并查看 DSH 返回的文字记录。</p>
+      </div>
+      <div class="intro-chip"><span class="chip-icon">⌁</span><span><b>前端不存密码</b><small>连接密钥仅留在当前标签页内存</small></span></div>
+    </section>
+
+    <aside class="boundary-banner" role="note">
+      <span class="banner-icon" aria-hidden="true">i</span>
+      <div><strong>手机操控边界</strong><p>DSH Go 的读屏、点按等手机操控只在本机引擎和原生授权下可用。GitHub Pages 本身不能直连另一台手机；本页不会绕过手机端确认。实际连接需要你自行部署并保护桥接服务。</p></div>
+      <a href="https://github.com/ccch1mneyyy/dsh-go/blob/main/docs/guide/zh/04-phone-control.md" target="_blank" rel="noreferrer">查看 DSH 操控说明 <span aria-hidden="true">↗</span></a>
+    </aside>
+
+    <div class="workspace-grid">
+      <aside class="sidebar">
+        <section class="panel connect-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">01 / SECURE LINK</p><h2>连接桥接服务</h2></div>
+            <span class="lock-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4.5" y="10" width="15" height="11" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </span>
+          </div>
+          <form id="connect-form" autocomplete="off">
+            <label for="bridge-url">桥接服务 HTTPS 地址</label>
+            <div class="input-wrap"><span class="input-prefix">↗</span><input id="bridge-url" name="bridgeUrl" type="url" placeholder="https://your-private-bridge.example" inputmode="url" spellcheck="false" required></div>
+            <label for="bridge-key">访问密钥 <span class="label-hint">不会写入浏览器存储</span></label>
+            <div class="input-wrap"><span class="input-prefix">●</span><input id="bridge-key" name="bridgeKey" type="password" placeholder="粘贴桥接服务密钥" autocomplete="new-password" required><button type="button" class="reveal-button" id="toggle-key" aria-label="显示或隐藏访问密钥">显示</button></div>
+            <button class="button button-primary connect-button" type="submit"><span class="button-text">连接 DSH</span><span class="button-arrow" aria-hidden="true">→</span></button>
+            <p class="privacy-caption"><span class="tiny-check">✓</span> 密钥仅用于本标签页与桥接服务通信；刷新页面会清除。</p>
+          </form>
+          <div id="connect-error" class="inline-error" role="status" hidden></div>
+          <div id="connected-details" class="connected-details" hidden>
+            <div class="device-row"><span class="device-avatar">D</span><span><b>DSH Host</b><small id="host-status">连接已建立</small></span><button id="disconnect-button" class="text-button" type="button">断开</button></div>
+          </div>
+        </section>
+
+        <section class="panel sessions-panel">
+          <div class="session-heading">
+            <div><p class="eyebrow">02 / CONVERSATIONS</p><h2>会话</h2></div>
+            <button id="new-session" class="icon-button" type="button" title="新建会话" aria-label="新建会话" disabled><span aria-hidden="true">＋</span></button>
+          </div>
+          <div id="session-list" class="session-list"><div class="empty-sessions"><span class="empty-orbit"></span><p>连接后显示 DSH 会话</p></div></div>
+          <p class="sessions-footer"><span class="pulse-dot"></span> 仅显示桥接服务返回的会话</p>
+        </section>
+
+        <div class="sidebar-footnote"><span class="shield-mini" aria-hidden="true">◇</span><p>不要把桥接密钥、DSH 启动令牌或访问链接提交到公开仓库。</p></div>
+      </aside>
+
+      <section class="panel conversation-panel" aria-label="DSH 任务会话">
+        <div class="conversation-topline">
+          <div class="conversation-title"><span class="conversation-orb" aria-hidden="true"><span></span></span><div><p class="eyebrow">03 / TASK RUNNER</p><h2 id="conversation-title">任务工作区</h2></div></div>
+          <div class="conversation-actions"><span id="run-state" class="run-state">等待连接</span><button id="stop-task" class="button button-stop" type="button" disabled><span class="stop-square"></span>停止任务</button></div>
+        </div>
+
+        <div id="conversation-empty" class="conversation-empty">
+          <div class="empty-illustration" aria-hidden="true">
+            <div class="device-card device-back"><span></span><i></i><i></i></div>
+            <div class="device-card device-front"><span class="device-spark">✳</span><b>DSH</b><small>READY WHEN YOU ARE</small><div class="device-wave"></div></div>
+            <span class="orbit orbit-a"></span><span class="orbit orbit-b"></span>
+          </div>
+          <p class="eyebrow">A QUIETER WAY TO DELEGATE</p>
+          <h3>先连上设备，再开始任务</h3>
+          <p class="empty-description">接入桥接服务后，你可以选择已有会话或创建新会话。手机上的权限和确认仍由 DSH Go 原生界面管理。</p>
+          <div class="empty-steps"><div><span>1</span>部署受信桥接服务</div><div><span>2</span>连接并选定会话</div><div><span>3</span>发送任务，查看文字结果</div></div>
+          <button id="demo-button" class="button button-quiet" type="button">预览界面演示 <span aria-hidden="true">→</span></button>
+        </div>
+
+        <div id="message-list" class="message-list" aria-live="polite" aria-label="会话消息" hidden></div>
+        <div id="task-notice" class="task-notice" hidden></div>
+
+        <div class="composer-area">
+          <div class="composer-helper"><span class="helper-dot"></span><span>文字任务</span><span class="helper-divider">·</span><span>无附件</span><span class="helper-spacer"></span><span id="char-count">0 / 8,000</span></div>
+          <form id="prompt-form" class="composer">
+            <textarea id="prompt-input" rows="2" maxlength="8000" placeholder="连接 DSH 并选择一个会话后输入任务…" disabled></textarea>
+            <button id="send-button" class="send-button" type="submit" aria-label="发送任务" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 12 20 4.5l-4.5 15-3.2-6.3L4.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12.3 13.2 4.6-4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </form>
+          <p class="composer-disclaimer"><span aria-hidden="true">ⓘ</span> 任务发送后会在目标 DSH 主机执行。请避免发送密码、验证码、支付信息或不必要的个人数据。</p>
+        </div>
+      </section>
+    </div>
+
+    <footer class="page-footer"><span>DSH Remote Console <span class="footer-separator">/</span> 独立社区控制台</span><span>不属于 DeepSeek 官方产品 <span class="footer-separator">·</span> <a href="https://github.com/ccch1mneyyy/dsh-go" target="_blank" rel="noreferrer">参考项目与 API 说明</a></span></footer>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
