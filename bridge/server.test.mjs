@@ -66,7 +66,7 @@ test('bridge authenticates to DSH server-side, restricts browser origin, and exp
       value = { accepted: true };
     } else if (method === 'session/page') {
       value = { records: [
-        { event: { seq: 1, time: 1784330000000, type: 'user/message', data: { message: { role: 'user', source: { kind: 'user' }, content: [{ type: 'text', text: '做一件事' }, { type: 'image', attachment: {} }] } } } },
+        { event: { seq: 1, time: 1784330000000, type: 'user/message', data: { role: 'user', source: { kind: 'user' }, content: [{ type: 'text', text: '做一件事' }, { type: 'image', attachment: {} }] } } },
         { event: { seq: 2, time: 1784330001000, type: 'assistant/message', data: { message: { role: 'assistant', content: [{ type: 'reasoning', text: '不应返回的思考' }, { type: 'text', text: '已完成。' }, { type: 'tool-call', name: 'internal', arguments: 'secret' }] } } } }
       ] };
     } else {

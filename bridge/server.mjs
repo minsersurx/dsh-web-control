@@ -81,7 +81,7 @@ function extractHistory(records) {
     const type = event?.type;
     if (type !== 'user/message' && type !== 'assistant/message') continue;
     const data = event?.data || {};
-    const message = data.message || {};
+    const message = data.message || (type === 'user/message' ? data : {});
     const role = type === 'user/message' ? 'user' : 'assistant';
     if (role === 'user' && message?.source?.kind && message.source.kind !== 'user') continue;
     const content = Array.isArray(message.content) ? message.content : [];

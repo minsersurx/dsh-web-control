@@ -228,6 +228,10 @@
     state.lastHistorySignature = '';
     renderSessions();
     ui.title.textContent = sessionTitle(state.sessions.find(s => s.sessionId === id) || { sessionId: id });
+    if (state.isDemo) {
+      renderMessages(demoMessages[id] || []);
+      return;
+    }
     ui.empty.hidden = false;
     ui.messages.hidden = true;
     ui.empty.querySelector('h3').textContent = '正在读取会话…';
@@ -242,7 +246,6 @@
       if (!state.connected || !state.activeId || document.hidden) return;
       try {
         await loadSessions(true);
-        await loadHistory();
       } catch (error) {
         ui.runState.textContent = '同步暂时中断';
         ui.runState.classList.remove('is-running');
@@ -263,6 +266,7 @@
       ui.connectForm.querySelector('.button-text').textContent = '正在验证…';
       const status = await api('/v1/status');
       if (!status.dshReady) throw new Error('桥接服务已响应，但暂时连不上 DSH 主机。请检查目标 DSH 是否在运行、启动令牌是否有效。');
+      state.isDemo = false;
       setConnected(true);
       setStatus(true, 'DSH 已连接');
       ui.hostStatus.textContent = 'DSH 主机在线';
@@ -324,7 +328,6 @@
       const request = data.requestId ? `（请求 ${data.requestId.slice(0, 8)}）` : '';
       setNotice(`任务已提交给 DSH${request}。如果需要手机权限或关键操作确认，请在目标设备的 DSH Go 原生界面处理。`);
       await loadSessions(true);
-      await loadHistory();
       toast('任务已发送。');
     } catch (error) {
       setNotice(`任务未能确认送达：${messageError(error)}。请先检查会话状态，不要盲目重复发送。`, true);
@@ -406,7 +409,7 @@
     ui.toggleKey.setAttribute('aria-label', hidden ? '隐藏访问密钥' : '显示访问密钥');
   });
   window.addEventListener('pagehide', () => { state.key = ''; clearInterval(state.pollTimer); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && state.connected && !state.isDemo) void loadSessions(true).then(loadHistory).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && state.connected && !state.isDemo) void loadSessions(true).catch(() => {}); });
 
   setStatus(false, '尚未连接');
   renderSessions();
